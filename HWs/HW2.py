@@ -63,9 +63,8 @@ def read_url_content(url: str) -> str | None:
         resp = requests.get(url, headers=headers, timeout=20)
         resp.raise_for_status()
 
-        # Prefer lxml parser for robustness
-        soup = BeautifulSoup(resp.content, "lxml")
-
+        soup = BeautifulSoup(resp.content, "html.parser")
+        
         # Strip non-content tags
         for tag in soup(["script", "style", "noscript"]):
             tag.decompose()
