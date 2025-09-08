@@ -7,5 +7,5 @@ pages = [
     st.Page("HWs/HW1.py", title="HW 1 — Document QA", icon="📝"),
 ]
 
-nav = st.navigation(pages)   # HW2 listed first → default page
+nav = st.navigation(pages)   # HW2 first → default
 nav.run()
