@@ -43,8 +43,8 @@ MODEL_MAP = {
         False: "mistral-small-latest",
     },
     "Gemini": {
-        True:  "gemini-1.5-pro",
-        False: "gemini-1.5-flash",
+        True:  "gemini-2.5-flash",      
+        False: "gemini-2.5-flash-lite", 
     },
 }
 model_id = MODEL_MAP[provider][use_advanced]
