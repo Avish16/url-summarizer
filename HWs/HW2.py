@@ -139,7 +139,7 @@ def run_summary(text: str, provider: str, model: str, style: str, lang: str) -> 
         return summarize_gemini(text, model, instruction)
     raise ValueError("Unsupported provider selected.")
 
-# 6) read URL, summarize, display
+# read URL, summarize, display
 if url:
     doc_text = read_url_content(url)
     if doc_text:
