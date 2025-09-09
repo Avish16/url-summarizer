@@ -2,17 +2,17 @@ import streamlit as st
 import requests
 from bs4 import BeautifulSoup
 
-# ---- API keys from Streamlit secrets ----
+# API keys from Streamlit secrets
 OPENAI_API_KEY   = st.secrets.get("OPENAI_API_KEY")
 MISTRAL_API_KEY  = st.secrets.get("MISTRAL_API_KEY")
 GEMINI_API_KEY   = st.secrets.get("GEMINI_API_KEY")
 
 st.title("🧾 HW 2: URL Summarizer (Multi-LLM: OpenAI / Mistral / Gemini)")
 
-# 4) URL input at the top (not sidebar)
+# URL input at the top
 url = st.text_input("Enter a web page URL", placeholder="https://en.wikipedia.org/wiki/India_national_cricket_team")
 
-# 5) Sidebar menus: summary type, output language, model selection
+#Sidebar menus: summary type, output language, model selection
 with st.sidebar:
     st.header("Summary options")
     summary_style = st.radio(
@@ -23,7 +23,7 @@ with st.sidebar:
 
     language = st.selectbox(
         "Output language",
-        ["English", "French", "Spanish", "Hindi"],  # ≥ 3 options
+        ["English", "French", "Spanish", "Hindi"],  
         index=0
     )
 
@@ -32,7 +32,7 @@ with st.sidebar:
     provider = st.selectbox("LLM provider", ["OpenAI", "Mistral", "Gemini"], index=0)
     use_advanced = st.checkbox("Use Advanced Model", value=False)
 
-# 10) Model map
+#Model map
 MODEL_MAP = {
     "OpenAI": {
         True:  "gpt-4o",
@@ -50,7 +50,7 @@ MODEL_MAP = {
 model_id = MODEL_MAP[provider][use_advanced]
 st.caption(f"Using **{provider}** model: `{model_id}` | Output: **{language}** | Style: **{summary_style}**")
 
-# 7) Hardened URL reader (headers + lxml + content focus)
+# Hardened URL reader
 def read_url_content(url: str) -> str | None:
     try:
         headers = {
@@ -69,7 +69,7 @@ def read_url_content(url: str) -> str | None:
         for tag in soup(["script", "style", "noscript"]):
             tag.decompose()
 
-        # Prefer main article area (Wikipedia etc.), else <main>, else <body>
+        # Prefer main article area 
         main = soup.select_one("#mw-content-text") or soup.select_one("main") or soup.body
         if not main:
             return None
@@ -82,7 +82,7 @@ def read_url_content(url: str) -> str | None:
         print(f"Error reading {url}: {e}")
         return None
 
-# ---- Prompt builder (8,9)
+# Prompt builder (8,9)
 def build_instruction(style: str, lang: str) -> str:
     base = f"Write the summary in {lang} only. No preamble or labels. Be faithful to the source."
     if style == "100 words":
@@ -91,7 +91,7 @@ def build_instruction(style: str, lang: str) -> str:
         return f"Summarize the document in exactly two connected paragraphs (Paragraph 2 builds on Paragraph 1). {base}"
     return f"Summarize the document as exactly 5 concise bullet points capturing distinct key ideas. {base}"
 
-# ---- Provider runners (with light key validation)
+# Provider runners 
 def summarize_openai(text: str, model: str, instruction: str) -> str:
     if not OPENAI_API_KEY:
         raise ValueError("OPENAI_API_KEY missing in secrets.")
@@ -139,7 +139,7 @@ def run_summary(text: str, provider: str, model: str, style: str, lang: str) -> 
         return summarize_gemini(text, model, instruction)
     raise ValueError("Unsupported provider selected.")
 
-# 6) Execute: read URL, summarize, display
+# 6) read URL, summarize, display
 if url:
     doc_text = read_url_content(url)
     if doc_text:
