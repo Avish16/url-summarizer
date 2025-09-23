@@ -1,22 +1,26 @@
-import os, sys, glob
-import streamlit as st
-from typing import List, Dict
+import sys
+import streamlit as st  # safe
 
-# --- Streamlit Cloud sqlite fix for ChromaDB ---
+# SQLite shim MUST run before importing chromadb
+import sys
 __import__("pysqlite3")
 sys.modules["sqlite3"] = sys.modules.pop("pysqlite3")
 
+
+# Now it is safe to import chromadb
+import os, glob
+from typing import List, Dict
 import chromadb
 from chromadb.utils import embedding_functions
+from chromadb.config import Settings
 from bs4 import BeautifulSoup
-
 
 # ===== Page =====
 st.title("HW 4 — iSchool Student Orgs Chatbot (RAG)")
 
 # ===== Constants (edit paths, not code) =====
 HTML_DIR = "data/su_orgs_html"        # put the provided HTML files here
-CHROMA_DIR = "./ChromaDB_hw4"         # persisted vector DB folder
+CHROMA_DIR = ".ChromaDB_hw4"         # persisted vector DB folder
 COLLECTION_NAME = "Lab4Collection"    # per spec
 EMBED_MODEL = "text-embedding-3-small"  # OpenAI embeddings (1536-dim)
 TOP_K = 4                              # retrieved chunks per answer
