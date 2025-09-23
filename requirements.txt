@@ -2,10 +2,9 @@ streamlit>=1.33
 openai>=1.50.0
 chromadb>=0.5.5
 pysqlite3-binary
-protobuf==3.20
+protobuf>=3.20
 beautifulsoup4
 lxml
 mistralai
 google-generativeai
 PyPDF2>=3.0.0
-
