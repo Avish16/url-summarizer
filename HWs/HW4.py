@@ -1,13 +1,11 @@
 import sys
-import streamlit as st  # safe
+import streamlit as st 
 
-# SQLite shim MUST run before importing chromadb
 import sys
 __import__("pysqlite3")
 sys.modules["sqlite3"] = sys.modules.pop("pysqlite3")
 
 
-# Now it is safe to import chromadb
 import os, glob
 from typing import List, Dict
 import chromadb
@@ -15,18 +13,18 @@ from chromadb.utils import embedding_functions
 from chromadb.config import Settings
 from bs4 import BeautifulSoup
 
-# ===== Page =====
+# Page
 st.title("HW 4 — iSchool Student Orgs Chatbot (RAG)")
 
-# ===== Constants (edit paths, not code) =====
-HTML_DIR = "data/su_orgs_html"        # put the provided HTML files here
-CHROMA_DIR = ".ChromaDB_hw4"         # persisted vector DB folder
-COLLECTION_NAME = "Lab4Collection"    # per spec
+# Constants 
+HTML_DIR = "data/su_orgs_html"        
+CHROMA_DIR = ".ChromaDB_hw4"        
+COLLECTION_NAME = "Lab4Collection"    
 EMBED_MODEL = "text-embedding-3-small"  # OpenAI embeddings (1536-dim)
-TOP_K = 4                              # retrieved chunks per answer
-MEM_KEEP = 5                           # keep last 5 Q&A pairs
+TOP_K = 4                              
+MEM_KEEP = 5                           
 
-# ===== Sidebar: choose LLM (3 vendors) =====
+# Sidebar: choose LLM 
 with st.sidebar:
     vendor = st.selectbox("Model vendor", ["OpenAI", "Mistral", "Gemini"])
     use_advanced = st.checkbox("Use advanced model", value=False)
@@ -37,16 +35,16 @@ MODEL = {
 }[vendor][use_advanced]
 st.caption(f"Using **{vendor}** — `{MODEL}`")
 
-# ===== Secrets (keys) =====
+#Secrets (keys)
 OPENAI_API_KEY  = st.secrets.get("OPENAI_API_KEY")
 MISTRAL_API_KEY = st.secrets.get("MISTRAL_API_KEY")
 GEMINI_API_KEY  = st.secrets.get("GEMINI_API_KEY")
 
-# ===== Session state =====
+# Session state
 if "history" not in st.session_state:
     st.session_state.history: List[Dict[str, str]] = []
 
-# ===== Chroma persistent collection (create DB once) =====
+# Chroma persistent collection 
 os.makedirs(CHROMA_DIR, exist_ok=True)
 chroma_client = chromadb.PersistentClient(path=CHROMA_DIR)
 openai_ef = embedding_functions.OpenAIEmbeddingFunction(
@@ -169,7 +167,7 @@ def answer_with_rag(user_q: str) -> str:
     st.write_stream(gen())
     return "".join(chunks).strip()
 
-# Build vector DB once, then chat
+# Build vector DB 
 build_vector_db_once()
 
 for m in st.session_state.history:
