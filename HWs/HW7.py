@@ -140,12 +140,3 @@ if st.button("Run Query"):
             st.markdown(f"[Read more]({m['url']})")
         st.divider()
 
-with st.expander("Architecture Explanation"):
-    st.write("- RAG over news CSV using Chroma (new API, persistent mode)\n"
-             "- OpenAI embeddings for semantic retrieval\n"
-             "- LLM ranks news by interest or topic for a global law firm\n"
-             "- Two vendors (OpenAI & Mistral) with advanced/simple tiers")
-
-with st.expander("How ranking was tested"):
-    st.write("- Checked that ranked items matched query relevance\n"
-             "- Compared OpenAI and Mistral outputs for consistency and depth")
