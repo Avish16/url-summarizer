@@ -139,6 +139,15 @@ if query:
         context = [f"{i+1}. {m.get('company','')} ({m.get('date','')})\n{d[:250]}" for i, (m, d) in enumerate(zip(metas, docs))]
         st.session_state.last_results = context
 
+        # Display ranked list before generating answer
+        st.subheader("Top Results")
+        for i, (m, d) in enumerate(zip(metas, docs), 1):
+            st.markdown(f"**{i}. {m.get('company','(no title)')}** ({m.get('date','')})")
+            st.write(d[:500] + ("..." if len(d) > 500 else ""))
+            if m.get("url"):
+                st.markdown(f"[Read more]({m['url']})")
+            st.divider()
+
     # Create memory messages
     system = {"role": "system", "content": "You are a news bot for a global law firm. Use memory context and retrieved items to answer clearly."}
     msgs = [system] + st.session_state.history[-(MEM_KEEP*2):]
