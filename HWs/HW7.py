@@ -111,8 +111,9 @@ def parse_rank(text: str, n: int):
     return out[:SHOW_K] if out else list(range(1, min(SHOW_K, n)+1))
 
 # Memory setup 
+# ----------------- Memory setup -----------------
 if "history" not in st.session_state:
-    st.session_state.history: List[Dict[str, str]] = []
+    st.session_state.history = []  # type: ignore
 if "last_results" not in st.session_state:
     st.session_state.last_results = []  # keep last retrieved docs
 
