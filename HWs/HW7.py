@@ -8,7 +8,7 @@ from chromadb.utils import embedding_functions
 from openai import OpenAI
 from mistralai import Mistral
 
-# ----------------- Page setup -----------------
+# Page setup 
 st.title("HW 7 — News Info Bot 📰")
 
 CSV_PATH = "data/news/news.csv"
@@ -17,7 +17,7 @@ COLLECTION_NAME = "HW7News"
 EMBED_MODEL = "text-embedding-3-small"
 TOP_K = 8
 SHOW_K = 5
-MEM_KEEP = 5  # memory turns to keep
+MEM_KEEP = 5 
 
 # Sidebar: model selector
 with st.sidebar:
@@ -36,7 +36,7 @@ st.caption(f"Using **{vendor}** — `{MODEL_NAME}`")
 OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY")
 MISTRAL_API_KEY = st.secrets.get("MISTRAL_API_KEY")
 
-# ----------------- Load CSV -----------------
+# Load CSV
 def load_news(csv_path: str) -> pd.DataFrame:
     if not os.path.exists(csv_path):
         st.error(f"CSV not found at {csv_path}")
@@ -58,7 +58,7 @@ def load_news(csv_path: str) -> pd.DataFrame:
 
 news_df = load_news(CSV_PATH)
 
-# ----------------- Chroma DB -----------------
+#  Chroma DB
 os.makedirs(CHROMA_DIR, exist_ok=True)
 chroma_client = chromadb.PersistentClient(path=CHROMA_DIR)
 openai_ef = embedding_functions.OpenAIEmbeddingFunction(
@@ -80,7 +80,7 @@ if collection.count() == 0:
         })
     collection.add(documents=docs, ids=ids, metadatas=metas)
 
-# ----------------- Retrieval -----------------
+# Retrieval
 def retrieve_news(query: str, top_k: int = TOP_K):
     return collection.query(query_texts=[query], n_results=top_k)
 
@@ -90,7 +90,7 @@ def summarize_items(metas, docs):
         out.append(f"{i}. {m.get('company','')} ({m.get('date','')})\n{d[:250]}")
     return "\n".join(out)
 
-# ----------------- LLM -----------------
+# LLM 
 def call_llm(messages: List[Dict[str, str]]):
     if vendor == "OpenAI":
         client = OpenAI(api_key=OPENAI_API_KEY)
@@ -110,13 +110,13 @@ def parse_rank(text: str, n: int):
             seen.add(x)
     return out[:SHOW_K] if out else list(range(1, min(SHOW_K, n)+1))
 
-# ----------------- Memory setup -----------------
+# Memory setup 
 if "history" not in st.session_state:
     st.session_state.history: List[Dict[str, str]] = []
 if "last_results" not in st.session_state:
     st.session_state.last_results = []  # keep last retrieved docs
 
-# ----------------- Chat Interface -----------------
+# Chat Interface
 for msg in st.session_state.history:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
