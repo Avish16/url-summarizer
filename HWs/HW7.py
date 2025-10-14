@@ -16,7 +16,7 @@ COLLECTION_NAME = "HW7News"
 EMBED_MODEL = "text-embedding-3-small"
 TOP_K = 8
 SHOW_K = 5
-MEM_KEEP = 5  # keep last 5 Q&A pairs
+MEM_KEEP = 5  # short-term memory (5 Q&A pairs)
 
 # Sidebar: Model selector
 with st.sidebar:
@@ -29,7 +29,7 @@ MODEL_MAP = {
     "Mistral": {True: "mistral-large-latest", False: "mistral-small-latest"},
 }
 MODEL_NAME = MODEL_MAP[vendor][advanced]
-st.caption(f"Using **{vendor}** — `{MODEL_NAME}`")
+st.caption(f"Using **{vendor}** — {MODEL_NAME}")
 
 # Keys
 OPENAI_API_KEY  = st.secrets.get("OPENAI_API_KEY")
@@ -37,6 +37,7 @@ MISTRAL_API_KEY = st.secrets.get("MISTRAL_API_KEY")
 
 # ----------------- Load CSV -----------------
 def load_news(csv_path: str) -> pd.DataFrame:
+    """Load and prepare the news CSV for RAG-based retrieval."""
     if not os.path.exists(csv_path):
         st.error(f"CSV not found at {csv_path}")
         st.stop()
@@ -73,14 +74,10 @@ if collection.count() == 0:
     for i, r in news_df.iterrows():
         docs.append(r["_text"])
         ids.append(f"news_{i}")
-        metas.append({
-            "company": r.get("company_name", ""),
-            "date": r.get("Date", ""),
-            "url": r.get("_url", "")
-        })
+        metas.append({"company": r.get("company_name", ""), "date": r.get("Date", ""), "url": r.get("_url", "")})
     collection.add(documents=docs, ids=ids, metadatas=metas)
 
-# ----------------- Helper Functions -----------------
+# ----------------- Retrieval -----------------
 def retrieve_news(query: str, top_k: int = TOP_K):
     return collection.query(query_texts=[query], n_results=top_k)
 
@@ -90,7 +87,9 @@ def summarize_items(metas, docs):
         out.append(f"{i}. {m.get('company','')} ({m.get('date','')})\n{d[:250]}")
     return "\n".join(out)
 
+# ----------------- LLM functions -----------------
 def call_llm(messages: List[Dict[str, str]]):
+    """Call OpenAI or Mistral chat completion."""
     if vendor == "OpenAI":
         client = OpenAI(api_key=OPENAI_API_KEY)
         resp = client.chat.completions.create(model=MODEL_NAME, messages=messages)
@@ -114,31 +113,24 @@ if "history" not in st.session_state:
     st.session_state.history: List[Dict[str, str]] = []
 
 def memory_messages():
+    """Return short-term memory (last 5 Q&A pairs)."""
     return st.session_state.history[-MEM_KEEP*2:]
 
-# ----------------- Chat Interface -----------------
-st.markdown("💬 Ask questions like *'find the most interesting news'* or *'find news about AI regulation'*")
+# ----------------- UI -----------------
+query = st.text_input("Ask something like 'find the most interesting news' or 'find news about AI regulation'")
 
-# Display chat history
-for msg in st.session_state.history:
-    with st.chat_message(msg["role"]):
-        st.markdown(msg["content"])
+if st.button("Run Query"):
+    if not query.strip():
+        st.warning("Please enter a query.")
+        st.stop()
 
-# Input box for chat
-query = st.chat_input("Ask a question about the news...")
-
-if query:
-    # Show user message
-    st.chat_message("user").markdown(query)
-    st.session_state.history.append({"role": "user", "content": query})
-
-    # Retrieve top results from Chroma
+    # Retrieve from vector DB
     res = retrieve_news(query)
     docs, metas = res["documents"][0], res["metadatas"][0]
     listed = summarize_items(metas, docs)
 
-    # Build prompt with memory
-    messages = [{"role": "system", "content": "You are a news analyst bot for a global law firm. Use the retrieved news and past context to answer."}]
+    # Prepare messages with memory context
+    messages = [{"role": "system", "content": "You are a news analyst bot for a global law firm. Use prior context and the retrieved news to respond helpfully."}]
     messages += memory_messages()
     messages.append({"role": "user", "content": query})
 
@@ -149,19 +141,21 @@ if query:
         instruction = (f"Rank the items most relevant to '{query}'. Return only comma-separated numbers.")
 
     messages.append({"role": "user", "content": f"{instruction}\n\nItems:\n{listed}\n\nRank:"})
+
+    # Generate response
     ranked = call_llm(messages)
     order = parse_rank(ranked, len(docs))
 
-    # Assistant's response
-    with st.chat_message("assistant"):
-        st.markdown("**Top Results:**")
-        for i, idx in enumerate(order, 1):
-            m, d = metas[idx-1], docs[idx-1]
-            st.markdown(f"**{i}. {m.get('company','(no title)')}** ({m.get('date','')})")
-            st.write(d[:400] + ("..." if len(d) > 400 else ""))
-            if m.get("url"):
-                st.markdown(f"[Read more]({m['url']})")
-            st.divider()
+    # Display ranked results
+    st.subheader("Top Results")
+    for i, idx in enumerate(order, 1):
+        m, d = metas[idx-1], docs[idx-1]
+        st.markdown(f"**{i}. {m.get('company','(no title)')}** ({m.get('date','')})")
+        st.write(d[:500] + ("..." if len(d) > 500 else ""))
+        if m.get("url"):
+            st.markdown(f"[Read more]({m['url']})")
+        st.divider()
 
-    # Save LLM output to memory
-    st.session_state.history.append({"role": "assistant", "content": f"Ranked results for: {query}"})
+    # Update memory
+    st.session_state.history.append({"role": "user", "content": query})
+    st.session_state.history.append({"role": "assistant", "content": ranked})
